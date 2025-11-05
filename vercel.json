@@ -1,0 +1,10 @@
+{
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(favicon.ico|manifest.webmanifest|robots.txt)", "dest": "/$1" },
+    { "src": "/(sw\\.js|workbox-.*\\.js)", "dest": "/$1" },
+    { "src": "/(assets|icons|images|fonts)/(.*)", "dest": "/$1/$2" },
+
+    { "src": "/.*", "dest": "/index.html" }
+  ]
+}

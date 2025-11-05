@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/img/logo-200.png" />
+
+    <title>OpenHack App</title>
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- Android navigation bar -->
+    <meta
+      name="theme-color"
+      content="#000000"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta
+      name="theme-color"
+      content="#000000"
+      media="(prefers-color-scheme: light)"
+    />
+
+    <!-- iOS extra -->
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-status-bar" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <link rel="apple-touch-icon" href="/icons/icon-512.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-120.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="1024x1024"
+      href="/icons/icon-1024.png"
+    />
+    <script>
+      // Clear old caches on every page load
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => {
+            if (name !== 'app-v2') {
+              caches.delete(name).then(() => {
+                console.info('Cleared old cache:', name)
+              })
+            }
+          })
+        })
+      }
+
+      if (
+        'serviceWorker' in navigator &&
+        (window.location.protocol === 'https:' ||
+          window.location.hostname === 'localhost')
+      ) {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then((reg) => console.info('ServiceWorker registered:', reg))
+          .catch((err) =>
+            console.warn('ServiceWorker registration failed:', err)
+          )
+      } else {
+        console.info(
+          'ServiceWorker not registered: insecure context or not supported'
+        )
+      }
+    </script>
+
+    <style>
+      @font-face {
+        font-family: 'Inter';
+        src: url('/fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+      }
+
+      :root {
+        --logo-animation-size: 120px;
+      }
+
+      @media (max-width: 400px) {
+        :root {
+          --logo-animation-size: 20vw;
+        }
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: black;
+        font-family: 'Inter', sans-serif;
+      }
+
+      #loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: min(320px, 90vw);
+        height: clamp(160px, 40vh, 280px);
+        margin: auto;
+      }
+
+      .logo-animation {
+        width: var(--logo-animation-size);
+        height: var(--logo-animation-size);
+        mask-image: linear-gradient(
+          -75deg,
+          rgba(0, 0, 0, 0.4) 30%,
+          #000 50%,
+          rgba(0, 0, 0, 0.4) 70%
+        );
+        -webkit-mask-image: linear-gradient(
+          -75deg,
+          rgba(0, 0, 0, 0.4) 30%,
+          #000 50%,
+          rgba(0, 0, 0, 0.4) 70%
+        );
+        mask-size: 200%;
+        -webkit-mask-size: 200%;
+        animation: shimmer 2s linear infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          -webkit-mask-position: 200%;
+          mask-position: 200%;
+        }
+        100% {
+          -webkit-mask-position: -200%;
+          mask-position: -200%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="loading">
+        <svg
+          class="logo-animation"
+          width="1000"
+          height="1000"
+          viewBox="0 0 1000 1000"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M500 0C511.111 154.815 626.667 471.556 1000 500C848.148 506.667 535.556 616 500 1000C464.444 616 151.852 506.667 0 500C373.333 471.556 488.889 154.815 500 0ZM498.096 302.222C493.701 363.459 447.992 488.747 300.318 499.999C360.384 502.636 484.032 545.884 498.096 697.777C512.16 545.884 635.808 502.636 695.874 499.999C548.2 488.748 502.491 363.46 498.096 302.222Z"
+            fill="url(#paint0_linear_119_2979)"
+          />
+          <defs>
+            <linearGradient
+              id="paint0_linear_119_2979"
+              x1="1000"
+              y1="-162.791"
+              x2="0"
+              y2="1000"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop stop-color="#FFAB2E" />
+              <stop offset="1" stop-color="#FF0022" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

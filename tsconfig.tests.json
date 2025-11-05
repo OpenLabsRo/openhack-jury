@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./tmp/testbuild",
+    "noEmit": false,
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "$lib": ["src/lib"],
+      "$lib/*": ["src/lib/*"],
+      "$components": ["src/lib/components"],
+      "$components/*": ["src/lib/components/*"],
+      "$runes": ["src/runes"],
+      "$runes/*": ["src/runes/*"],
+      "$routes": ["src/routes"],
+      "$routes/*": ["src/routes/*"],
+      "$api": ["src/lib/api"],
+      "$api/*": ["src/lib/api/*"],
+      "$types": ["src/types"],
+      "$types/*": ["src/types/*"]
+    }
+  },
+  "include": [
+    "src/lib/**/*.ts",
+    "src/runes/**/*.ts",
+    "src/types/**/*.ts",
+    "src/__tests__/**/*"
+  ]
+}

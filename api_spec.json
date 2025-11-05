@@ -1,0 +1,3699 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Backend API for OpenHack handling participant accounts, teams, feature flags, and superuser check-in tooling.",
+        "title": "OpenHack Backend API",
+        "contact": {},
+        "version": "25.11.04.2"
+    },
+    "basePath": "/",
+    "paths": {
+        "/accounts/auth/check": {
+            "post": {
+                "description": "Confirms if an initialized account already set a password so the UI can branch between login and signup.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Auth"
+                ],
+                "summary": "Check registration status",
+                "parameters": [
+                    {
+                        "description": "Account email",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/accounts.AccountCheckRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/accounts.AccountCheckResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotInitialized"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/auth/login": {
+            "post": {
+                "description": "Validates submitted credentials against the stored hash and returns a refreshed token plus account snapshot.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Auth"
+                ],
+                "summary": "Authenticate a participant",
+                "parameters": [
+                    {
+                        "description": "Login payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/accounts.CredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/accounts.AccountTokenResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountLoginWrongPassword"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotInitialized"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/auth/register": {
+            "post": {
+                "description": "Accepts credentials for an initialized participant and issues a signed session token upon success.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Auth"
+                ],
+                "summary": "Complete participant registration",
+                "parameters": [
+                    {
+                        "description": "Account credentials",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/accounts.CredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/accounts.AccountTokenResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotInitialized"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountAlreadyRegistered"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/flags": {
+            "get": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Provides the participant's active stage and boolean flags to drive feature toggles in the client.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Flags"
+                ],
+                "summary": "Retrieve current feature flags",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Flags"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/me": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Stores new first and last names and returns a refreshed token so clients keep their session in sync.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Profile"
+                ],
+                "summary": "Update display name",
+                "parameters": [
+                    {
+                        "description": "First and last name",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/accounts.AccountEditRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/accounts.AccountTokenResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/meta/ping": {
+            "get": {
+                "description": "Responds with PONG so callers can verify the accounts service group is reachable.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Accounts Meta"
+                ],
+                "summary": "Accounts service health check",
+                "responses": {
+                    "200": {
+                        "description": "PONG",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/meta/whoami": {
+            "get": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Reads the bearer token context and echoes the hydrated participant document.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Meta"
+                ],
+                "summary": "Get current account profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Account"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/voting/finalists": {
+            "get": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Returns the 3 finalist teams (middle, right, left order)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Voting"
+                ],
+                "summary": "Get finalists",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/accounts.VotingFinalistsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._FlagRequired"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/voting/status": {
+            "get": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Returns whether voting is open, if user has voted, and the list of finalists",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Voting"
+                ],
+                "summary": "Get voting status",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/accounts.VotingStatusResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/voting/vote": {
+            "post": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Records a vote for one of the finalists",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Voting"
+                ],
+                "summary": "Cast a vote",
+                "parameters": [
+                    {
+                        "description": "Team ID to vote for",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/accounts.VotingCastRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/accounts.VotingCastResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._FlagRequired"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountAlreadyRegistered"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/judge/judgment": {
+            "post": {
+                "security": [
+                    {
+                        "JudgeAuth": []
+                    }
+                ],
+                "description": "Records a judgment where a judge compares two teams and selects a winner.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Judges"
+                ],
+                "summary": "Create a judgment",
+                "parameters": [
+                    {
+                        "description": "Judgment details",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/judge.CreateJudgmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Judgment"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/judge/next-team": {
+            "post": {
+                "security": [
+                    {
+                        "JudgeAuth": []
+                    }
+                ],
+                "description": "Returns the next team ID for the judge to evaluate. Applies offset on first call, then cycles through teams until judging is complete.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Judges"
+                ],
+                "summary": "Get next team for judging",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgingFinished"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/judge/team": {
+            "get": {
+                "security": [
+                    {
+                        "JudgeAuth": []
+                    }
+                ],
+                "description": "Returns detailed information about a team including submission data.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Judges"
+                ],
+                "summary": "Get team information",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/judge/upgrade": {
+            "post": {
+                "description": "Validates the 2-minute connect token and mints a new 24-hour token for judge platform access.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Judges Auth"
+                ],
+                "summary": "Upgrade connect token to full session token",
+                "parameters": [
+                    {
+                        "description": "Connect token",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/judge.JudgeUpgradeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/judge.JudgeUpgradeResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/meta/ping": {
+            "get": {
+                "description": "Lightweight heartbeat used by load balancers to confirm the OpenHack API is alive.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "General"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "PONG",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/meta/version": {
+            "get": {
+                "description": "Exposes the semantic version bundled with the running process for smoke tests.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "General"
+                ],
+                "summary": "Current deployment version",
+                "responses": {
+                    "200": {
+                        "description": "25.10.01.0",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/auth/login": {
+            "post": {
+                "description": "Validates privileged credentials and returns a token plus superuser profile.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Auth"
+                ],
+                "summary": "Authenticate a superuser",
+                "parameters": [
+                    {
+                        "description": "Superuser credentials",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/superusers.SuperUserLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/superusers.SuperUserLoginResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountLoginWrongPassword"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNotExists"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/badges": {
+            "get": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Hashes each account into deterministic piles so on-site staff can stage badge pickup.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Badges"
+                ],
+                "summary": "Retrieve badge pile assignments for all accounts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/models.Account"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/flags": {
+            "get": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Reads the cached flag document so console operators can inspect rollout state.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flags"
+                ],
+                "summary": "Retrieve all feature flags",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Flags"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Applies a map of flag values and echoes the resulting assignments.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flags"
+                ],
+                "summary": "Bulk update feature flags",
+                "parameters": [
+                    {
+                        "description": "Flag assignments",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/flags.FlagAssignments"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/flags.FlagAssignments"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Updates one flag value and returns the refreshed flag map for verification.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flags"
+                ],
+                "summary": "Set a feature flag",
+                "parameters": [
+                    {
+                        "description": "Flag toggle",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/flags.FlagSetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/flags.FlagAssignments"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Deletes a flag from the assignments and returns the remaining map.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flags"
+                ],
+                "summary": "Remove a feature flag entry",
+                "parameters": [
+                    {
+                        "description": "Flag identifier",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/flags.FlagUnsetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/flags.FlagAssignments"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/flags/reset": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Sets every tracked flag back to false and returns the cleared map.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flags"
+                ],
+                "summary": "Reset all feature flags to false",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/flags.FlagAssignments"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/flags/test": {
+            "get": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Ensures the caller holds both the required role and feature toggles before allowing access.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Superusers Flags"
+                ],
+                "summary": "Validate that the current JWT satisfies flag middleware",
+                "responses": {
+                    "200": {
+                        "description": "it passed",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._FlagRequired"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/flagstages": {
+            "get": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Lists named flag stage presets so admins can preview rollout scripts.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flag Stages"
+                ],
+                "summary": "List available flag stages",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.FlagStage"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Saves a stage blueprint listing which flags to enable or disable.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flag Stages"
+                ],
+                "summary": "Create a new flag stage",
+                "parameters": [
+                    {
+                        "description": "Flag stage",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/flagstages.FlagStageCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.FlagStage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Deletes an unused flag stage and returns the removed record.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flag Stages"
+                ],
+                "summary": "Delete an existing flag stage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Flag stage ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.FlagStage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/flagstages/execute": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Fetches the stage, applies its instructions, and returns the resulting flags payload.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Flag Stages"
+                ],
+                "summary": "Apply a flag stage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Flag stage ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Flags"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._FlagStageNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/judges/connect": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Creates a short-lived 2-minute token that is displayed via QR code for judges to scan and exchange for a full session token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Judging"
+                ],
+                "summary": "Generate judge connect token",
+                "parameters": [
+                    {
+                        "description": "Judge ID",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/judging.JudgeConnectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/judging.JudgeConnectResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgeNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/judging/compute-rankings": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Uses the Crowd Bradley-Terry algorithm to compute team rankings and judge reliability scores from all judgments in the database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Judging"
+                ],
+                "summary": "Compute team rankings from judgments",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/judging.ComputeRankingsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/judging/init": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Groups judges by pair attribute and creates Latin rectangle assignment",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Judging"
+                ],
+                "summary": "Initialize judging configuration with judge pairing",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/judging/judge": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Creates a new judge with the given ID and name.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Judging"
+                ],
+                "summary": "Create a new judge",
+                "parameters": [
+                    {
+                        "description": "Judge details",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/judging.JudgeCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Judge"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgeAlreadyExists"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/meta/ping": {
+            "get": {
+                "description": "Confirms the privileged routes segment is reachable by returning a simple PONG.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Superusers Meta"
+                ],
+                "summary": "Superuser service health check",
+                "responses": {
+                    "200": {
+                        "description": "PONG",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/meta/whoami": {
+            "get": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Echoes the active superuser payload so operators can verify their scopes.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Meta"
+                ],
+                "summary": "Inspect the current superuser context",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.SuperUser"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/participants": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Creates a passwordless account record so the participant can complete onboarding later.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Participants"
+                ],
+                "summary": "Initialize an account shell for a participant",
+                "parameters": [
+                    {
+                        "description": "Participant seed data",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/participants.InitializeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Account"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountAlreadyInitialized"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/staff/account": {
+            "get": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Looks up the account by ID and returns the account.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Staff"
+                ],
+                "summary": "Gets an account based on the accountID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "accountID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Account"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotFound"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/staff/consumables": {
+            "put": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Updates the consumables for an account and emits an event for telemetry.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Staff"
+                ],
+                "summary": "Update consumables for an account",
+                "parameters": [
+                    {
+                        "description": "Consumables update",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Consumables"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "accountID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/staff/in": {
+            "patch": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Creates a present in event, and changes the property of an account to present.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Staff"
+                ],
+                "summary": "flags a participant as present",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "accountID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/staff/out": {
+            "patch": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Creates a present out event, and changes the property of an account to not present.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Staff"
+                ],
+                "summary": "flags a participant as not present",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "accountID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/staff/register": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Looks up the account by ID, emits telemetry, and returns the account plus computed badge pile. This route also modifies the account to be checked-in.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Staff"
+                ],
+                "summary": "Scan a participant QR code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/staff.StaffRegisterResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotFound"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/staff/tags": {
+            "get": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Pulls tag details from cache or Mongo and then fetches the linked account.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Staff"
+                ],
+                "summary": "Fetch a tag's linked account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Account"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNotFound"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TagIncomplete"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Persists the assignment and emits an event for check-in telemetry.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Staff"
+                ],
+                "summary": "Assign a tag to an account",
+                "parameters": [
+                    {
+                        "description": "Tag assignment",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Tag"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Tag"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TagIncomplete"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams": {
+            "get": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Looks up the caller's team by membership and returns submission metadata and members.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Core"
+                ],
+                "summary": "Fetch the team for the authenticated account",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Seeds a new team with the caller as captain and returns a refreshed token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Core"
+                ],
+                "summary": "Create a new team led by the authenticated account",
+                "parameters": [
+                    {
+                        "description": "Optional team seed",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/teams.AccountTokenResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountAlreadyHasTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Removes the final member from the roster and drops the team document when safe.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Core"
+                ],
+                "summary": "Delete the current team",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/teams.AccountTokenResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotEmpty"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/members": {
+            "get": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Reads the cached roster for the caller's team to power team management UIs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Members"
+                ],
+                "summary": "List team members for the authenticated account",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Account"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/members/join": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Validates capacity, attaches the caller, and returns a refreshed token plus updated roster.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Members"
+                ],
+                "summary": "Join an existing team by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "teamID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/teams.AccountMembersResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotFound"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamFull"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/members/kick": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Allows captains to prune roster members and returns the updated list for confirmation.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Members"
+                ],
+                "summary": "Remove a teammate by account ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "accountID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/teams.TeamMembersResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/members/leave": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Detaches the caller from the roster and returns the remaining membership plus refreshed token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Members"
+                ],
+                "summary": "Leave the current team",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/teams.AccountMembersResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotFound"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/meta/ping": {
+            "get": {
+                "description": "Returns a PONG from the teams group so orchestration checks can verify connectivity.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Teams Meta"
+                ],
+                "summary": "Teams service health check",
+                "responses": {
+                    "200": {
+                        "description": "PONG",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/meta/preview": {
+            "get": {
+                "description": "Retrieves basic team information including name, members, submission details, and table assignment for a given team ID. Useful for participants reviewing team details before joining via a join link.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Meta"
+                ],
+                "summary": "Get team preview details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Team ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/teams.TeamPreviewResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotFound"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/name": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Applies a new team name and broadcasts the change to the event stream.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Core"
+                ],
+                "summary": "Change the name of the current team",
+                "parameters": [
+                    {
+                        "description": "New team name",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/teams.TeamChangeNameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotFound"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/submissions": {
+            "get": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Retrieves the current submission details including name, description, repo, and presentation links.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Submissions"
+                ],
+                "summary": "Fetch the team submission",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/teams.SubmissionResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/submissions/desc": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Persists revised blurb content so reviewers receive the latest write-up.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Submissions"
+                ],
+                "summary": "Update the team submission description",
+                "parameters": [
+                    {
+                        "description": "Submission description",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/teams.SubmissionDescRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/submissions/name": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Records a new project name and emits an event so judges see the latest label.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Submissions"
+                ],
+                "summary": "Update the team submission name",
+                "parameters": [
+                    {
+                        "description": "Submission name",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/teams.SubmissionNameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/submissions/pres": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Keeps the presentation URL in sync for the demo day kiosk.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Submissions"
+                ],
+                "summary": "Update the team submission presentation",
+                "parameters": [
+                    {
+                        "description": "Submission presentation",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/teams.SubmissionPresRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/submissions/repo": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Stores a repository URL so judges can inspect source material from the dashboard.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Submissions"
+                ],
+                "summary": "Update the team submission repo",
+                "parameters": [
+                    {
+                        "description": "Submission repository",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/teams.SubmissionRepoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/teams/table": {
+            "patch": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Applies a new team table and broadcasts the change to the event stream.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams Core"
+                ],
+                "summary": "Changes the team's table",
+                "parameters": [
+                    {
+                        "description": "New table",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/teams.TeamChangeTableRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotFound"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountHasNoTeam"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "accounts.AccountCheckRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "accounts.AccountCheckResponse": {
+            "type": "object",
+            "properties": {
+                "registered": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "accounts.AccountEditRequest": {
+            "type": "object",
+            "properties": {
+                "firstName": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                }
+            }
+        },
+        "accounts.AccountTokenResponse": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "$ref": "#/definitions/models.Account"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "accounts.CredentialRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "accounts.VotingCastRequest": {
+            "type": "object",
+            "properties": {
+                "teamID": {
+                    "type": "string"
+                }
+            }
+        },
+        "accounts.VotingCastResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "accounts.VotingFinalistsResponse": {
+            "type": "object",
+            "properties": {
+                "finalists": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Team"
+                    }
+                }
+            }
+        },
+        "accounts.VotingStatusResponse": {
+            "type": "object",
+            "properties": {
+                "finalists": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Team"
+                    }
+                },
+                "hasVoted": {
+                    "type": "boolean"
+                },
+                "votingOpen": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "errmsg._AccountAlreadyHasTeam": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "account already has a team"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 409
+                }
+            }
+        },
+        "errmsg._AccountAlreadyInitialized": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "account already initialized"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 409
+                }
+            }
+        },
+        "errmsg._AccountAlreadyRegistered": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "account already registered"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 409
+                }
+            }
+        },
+        "errmsg._AccountHasNoTeam": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "account does not belong to a team"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 409
+                }
+            }
+        },
+        "errmsg._AccountLoginWrongPassword": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "wrong password"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 401
+                }
+            }
+        },
+        "errmsg._AccountNoToken": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "you are not logged in"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 401
+                }
+            }
+        },
+        "errmsg._AccountNotFound": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "account not found"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
+        "errmsg._AccountNotInitialized": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "account not initialized - talk to the administrator"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
+        "errmsg._FlagRequired": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "this feature is not available right now"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 401
+                }
+            }
+        },
+        "errmsg._FlagStageNotFound": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "flag stage not found"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
+        "errmsg._InternalServerError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "internal server error: \u003cdetails\u003e"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 500
+                }
+            }
+        },
+        "errmsg._JudgeAlreadyExists": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "judge already exists"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 409
+                }
+            }
+        },
+        "errmsg._JudgeNotFound": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "judge not found"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
+        "errmsg._JudgingFinished": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "judging finished"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 200
+                }
+            }
+        },
+        "errmsg._SuperUserNoToken": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "no token has been provided"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 401
+                }
+            }
+        },
+        "errmsg._SuperUserNotExists": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "superuser does not exist"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
+        "errmsg._TagIncomplete": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "tag data is incomplete"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 409
+                }
+            }
+        },
+        "errmsg._TagNotFound": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "tag not found"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
+        "errmsg._TeamFull": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "team is full"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 409
+                }
+            }
+        },
+        "errmsg._TeamNotEmpty": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "team is not empty"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 409
+                }
+            }
+        },
+        "errmsg._TeamNotFound": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "team  not found"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
+        "flags.FlagAssignments": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "boolean"
+            }
+        },
+        "flags.FlagSetRequest": {
+            "type": "object",
+            "properties": {
+                "flag": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "flags.FlagUnsetRequest": {
+            "type": "object",
+            "properties": {
+                "flag": {
+                    "type": "string"
+                }
+            }
+        },
+        "flagstages.FlagStageCreateRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "turnoff": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "turnon": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "judge.CreateJudgmentRequest": {
+            "type": "object",
+            "properties": {
+                "losingTeamID": {
+                    "type": "string",
+                    "example": "team_002"
+                },
+                "winningTeamID": {
+                    "type": "string",
+                    "example": "team_001"
+                }
+            }
+        },
+        "judge.JudgeUpgradeRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "judge.JudgeUpgradeResponse": {
+            "type": "object",
+            "properties": {
+                "judge": {
+                    "$ref": "#/definitions/models.Judge"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "judge.NextTeamResponse": {
+            "type": "object",
+            "properties": {
+                "teamID": {
+                    "type": "string",
+                    "example": "team_001"
+                }
+            }
+        },
+        "judging.ComputeRankingsResponse": {
+            "type": "object",
+            "properties": {
+                "judgeReliability": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number",
+                            "format": "float64"
+                        }
+                    }
+                },
+                "judgmentCount": {
+                    "type": "integer"
+                },
+                "rankedTeams": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "teamScores": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number",
+                        "format": "float64"
+                    }
+                },
+                "teamUncertainty": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number",
+                        "format": "float64"
+                    }
+                }
+            }
+        },
+        "judging.JudgeConnectRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "judge_001"
+                }
+            }
+        },
+        "judging.JudgeConnectResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "judging.JudgeCreateRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "judge_001"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Judge Alice"
+                }
+            }
+        },
+        "models.Account": {
+            "type": "object",
+            "properties": {
+                "checkedIn": {
+                    "type": "boolean"
+                },
+                "consumables": {
+                    "$ref": "#/definitions/models.Consumables"
+                },
+                "dob": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "foodRestrictions": {
+                    "type": "string"
+                },
+                "hasVoted": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "medicalConditions": {
+                    "description": "extra information about the user",
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "present": {
+                    "type": "boolean"
+                },
+                "teamID": {
+                    "type": "string"
+                },
+                "university": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Consumables": {
+            "type": "object",
+            "properties": {
+                "coffee": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "jerky": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "pizza": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "sandwiches": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "water": {
+                    "type": "integer",
+                    "example": 0
+                }
+            }
+        },
+        "models.FlagStage": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "turnoff": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "turnon": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "models.Flags": {
+            "type": "object",
+            "properties": {
+                "flags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                },
+                "stage": {
+                    "$ref": "#/definitions/models.FlagStage"
+                }
+            }
+        },
+        "models.Judge": {
+            "type": "object",
+            "properties": {
+                "currentTeam": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pair": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Judgment": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "judgeID": {
+                    "type": "string"
+                },
+                "losingTeamID": {
+                    "type": "string"
+                },
+                "winningTeamID": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SuperUser": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Tag": {
+            "type": "object",
+            "properties": {
+                "accountID": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Team": {
+            "type": "object",
+            "properties": {
+                "deleted": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "submission": {
+                    "type": "object",
+                    "properties": {
+                        "desc": {
+                            "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "pres": {
+                            "type": "string"
+                        },
+                        "repo": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "table": {
+                    "type": "string"
+                }
+            }
+        },
+        "participants.InitializeRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                }
+            }
+        },
+        "staff.StaffRegisterResponse": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "$ref": "#/definitions/models.Account"
+                },
+                "pile": {
+                    "type": "integer"
+                }
+            }
+        },
+        "superusers.SuperUserLoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "superusers.SuperUserLoginResponse": {
+            "type": "object",
+            "properties": {
+                "superuser": {
+                    "$ref": "#/definitions/models.SuperUser"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "teams.AccountMembersResponse": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "$ref": "#/definitions/models.Account"
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Account"
+                    }
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "teams.AccountTokenResponse": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "$ref": "#/definitions/models.Account"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "teams.SubmissionDescRequest": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string",
+                    "example": "A brief description of my project"
+                }
+            }
+        },
+        "teams.SubmissionNameRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "My Project"
+                }
+            }
+        },
+        "teams.SubmissionPresRequest": {
+            "type": "object",
+            "properties": {
+                "pres": {
+                    "type": "string",
+                    "example": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                }
+            }
+        },
+        "teams.SubmissionRepoRequest": {
+            "type": "object",
+            "properties": {
+                "repo": {
+                    "type": "string",
+                    "example": "https://github.com/user/repo"
+                }
+            }
+        },
+        "teams.SubmissionResponse": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string",
+                    "example": "A brief description of my project"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "My Project"
+                },
+                "pres": {
+                    "type": "string",
+                    "example": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                },
+                "repo": {
+                    "type": "string",
+                    "example": "https://github.com/user/repo"
+                }
+            }
+        },
+        "teams.TeamChangeNameRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "Team Awesome"
+                }
+            }
+        },
+        "teams.TeamChangeTableRequest": {
+            "type": "object",
+            "properties": {
+                "table": {
+                    "type": "string",
+                    "example": "A1"
+                }
+            }
+        },
+        "teams.TeamMembersResponse": {
+            "type": "object",
+            "properties": {
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Account"
+                    }
+                }
+            }
+        },
+        "teams.TeamPreviewResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "team_abc123"
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Account"
+                    }
+                },
+                "members_count": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Team Awesome"
+                },
+                "submission": {
+                    "$ref": "#/definitions/teams.SubmissionResponse"
+                },
+                "table": {
+                    "type": "string",
+                    "example": "A1"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "AccountAuth": {
+            "description": "Provide the participant bearer token as `Bearer \u003ctoken\u003e`.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        },
+        "SuperUserAuth": {
+            "description": "Provide the superuser bearer token as `Bearer \u003ctoken\u003e`.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+    "tags": [
+        {
+            "description": "Service-wide operational endpoints.",
+            "name": "General"
+        },
+        {
+            "description": "Operational endpoints for superuser services.",
+            "name": "Superusers Meta"
+        },
+        {
+            "description": "Superuser authentication flows.",
+            "name": "Superusers Auth"
+        },
+        {
+            "description": "Participant account lifecycle tooling for superusers.",
+            "name": "Superusers Participants"
+        },
+        {
+            "description": "Feature flag administration endpoints.",
+            "name": "Superusers Flags"
+        },
+        {
+            "description": "Stage-based flag rollout orchestration endpoints.",
+            "name": "Superusers Flag Stages"
+        },
+        {
+            "description": "Staff passport scanning and presence tooling endpoints.",
+            "name": "Superusers Staff"
+        },
+        {
+            "description": "Badge assignment and pile lookup endpoints.",
+            "name": "Superusers Badges"
+        },
+        {
+            "description": "Judge token generation and judging initialization endpoints.",
+            "name": "Superusers Judging"
+        },
+        {
+            "description": "Judge token upgrade and authentication flows.",
+            "name": "Judges Auth"
+        },
+        {
+            "description": "Judge team assignment and judging endpoints.",
+            "name": "Judges Core"
+        },
+        {
+            "description": "Meta routes like ping and whoami",
+            "name": "Accounts Meta"
+        },
+        {
+            "description": "Registration and login flows for participants.",
+            "name": "Accounts Auth"
+        },
+        {
+            "description": "Participant profile maintenance endpoints.",
+            "name": "Accounts Profile"
+        },
+        {
+            "description": "Feature flag lookup for participants.",
+            "name": "Accounts Flags"
+        },
+        {
+            "description": "Health probes for team services and other meta routes.",
+            "name": "Teams Meta"
+        },
+        {
+            "description": "Core team lifecycle management endpoints.",
+            "name": "Teams Core"
+        },
+        {
+            "description": "Team membership management endpoints.",
+            "name": "Teams Members"
+        },
+        {
+            "description": "Submission metadata update endpoints.",
+            "name": "Teams Submissions"
+        }
+    ]
+}
