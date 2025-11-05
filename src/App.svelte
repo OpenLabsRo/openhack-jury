@@ -3,50 +3,23 @@
   import { onMount } from 'svelte'
   import './app.css'
   import { openhackApi } from '$lib/api/openhackApi'
-  import {
-    accountRune,
-    getToken,
-    whoami,
-    removeToken,
-  } from '$runes/accountRune'
   import { navigate } from 'svelte5-router'
-  import {
-    fetchFlags,
-    startPolling as startFlagPolling,
-    stopPolling as stopFlagPolling,
-  } from '$runes/flagsRune'
   import {
     shouldShowInstallPrompt,
     setupPWAListeners,
-    isRunningAsPWA,
   } from '$lib/utils/pwaInitialize'
 
   // desktop routes
-  import DesktopIndex from '$routes/desktop/Index.svelte'
-  // @ts-ignore: resolution may point to generated .d.svelte.ts with an unusual extension
-  import DesktopTeam from '$routes/desktop/Team.svelte'
-  import DesktopSubmissions from '$routes/desktop/Submissions.svelte'
-  import DesktopQrTest from '$routes/desktop/QrTest.svelte'
-  import DesktopJoin from '$routes/desktop/Join.svelte'
-  import DesktopVote from '$routes/desktop/Vote.svelte'
-  import DesktopCheck from '$routes/desktop/auth/Check.svelte'
-  import DesktopRegister from '$routes/desktop/auth/Register.svelte'
-  import DesktopLogin from '$routes/desktop/auth/Login.svelte'
+  import DesktopJudge from '$routes/desktop/auth/Judge.svelte'
+  import DesktopJudging from '$routes/desktop/Judge.svelte'
   import DesktopNotFound from '$routes/desktop/auth/NotFound.svelte'
 
   // mobile routes
-  import MobileIndex from '$routes/mobile/Index.svelte'
-  import MobileTeam from '$routes/mobile/Team.svelte'
-  import MobileSubmissions from '$routes/mobile/Submissions.svelte'
-  import MobileCheck from '$routes/mobile/auth/Check.svelte'
-  import MobileRegister from '$routes/mobile/auth/Register.svelte'
-  import MobileLogin from '$routes/mobile/auth/Login.svelte'
-  import MobileJoin from '$routes/mobile/Join.svelte'
-  import MobileVote from '$routes/mobile/Vote.svelte'
+  import MobileJudge from '$routes/mobile/auth/Judge.svelte'
+  import MobileJudging from '$routes/mobile/Judge.svelte'
   import MobileNotFound from '$routes/mobile/auth/NotFound.svelte'
 
   // shared components
-  import Loading from '$lib/components/shared/Loading.svelte'
   import PWAInstallPrompt from '$lib/components/shared/PWAInstallPrompt.svelte'
 
   export let url = ''
@@ -71,8 +44,6 @@
   let isDesktop = true
   let deferredPrompt: any = null
   let showInstallPrompt = false
-  let accountUnsubscribe: (() => void) | null = null
-  let flagsPollingActive = false
 
   onMount(() => {
     isDesktop = checkDesktop()
@@ -94,7 +65,6 @@
           : null
       const forceShow = params?.get('showPwa') === '1'
       if (forceShow || shouldShowInstallPrompt()) {
-        // show a modal immediately; deferredPrompt may be null (handled by the component)
         showInstallPrompt = true
       }
     } catch (err) {
@@ -102,16 +72,6 @@
     }
 
     let isActive = true
-    accountUnsubscribe = accountRune.subscribe((account) => {
-      if (account && !flagsPollingActive) {
-        flagsPollingActive = true
-        void fetchFlags().catch(() => {})
-        startFlagPolling()
-      } else if (!account && flagsPollingActive) {
-        stopFlagPolling()
-        flagsPollingActive = false
-      }
-    })
 
     const run = async () => {
       const sessionCheck = async () => {
@@ -121,82 +81,25 @@
           // Ping the API to check for connectivity and CORS
           await openhackApi.General.ping()
 
-          const token = getToken()
+          let currentPath =
+            typeof window !== 'undefined' ? window.location.pathname : '/'
+          let currentSearch =
+            typeof window !== 'undefined' ? window.location.search : ''
 
-          if (token) {
-            let currentPath =
-              typeof window !== 'undefined' ? window.location.pathname : '/'
-            let currentSearch =
-              typeof window !== 'undefined' ? window.location.search : ''
+          if (typeof window !== 'undefined') {
+            currentPath = window.location.pathname
+            currentSearch = window.location.search
+          }
 
-            if (typeof window !== 'undefined') {
-              currentPath = window.location.pathname
-              currentSearch = window.location.search
-            }
+          // Check if this is a judge QR code auth request
+          if (currentPath === '/auth' && currentSearch.includes('token=')) {
+            // Let it go through to the Judge auth route
+            return
+          }
 
-            if (currentPath.startsWith('/auth')) {
-              try {
-                const params = new URLSearchParams(currentSearch)
-                const joinId = params.get('joinId')
-                const joinName = params.get('joinName')
-                if (joinId) {
-                  const target = new URLSearchParams({ id: joinId })
-                  if (joinName) {
-                    target.set('name', joinName)
-                  }
-                  navigate(`/join?${target.toString()}`)
-                } else {
-                  navigate('/')
-                }
-              } catch {
-                navigate('/')
-              }
-            }
-            // If a token exists, try to fetch the user's account data to restore the session
-            try {
-              await whoami()
-              // After successful whoami, fetch flags for the user
-              await fetchFlags()
-            } catch (error) {
-              console.error('Failed to restore session:', error)
-              // If the token is invalid, remove it and redirect to the login page
-              removeToken()
-              if (!isAuthPage) {
-                navigate('/auth/check')
-              }
-            }
-          } else if (!isAuthPage) {
-            // If no token, redirect to auth check
-            let currentPath =
-              typeof window !== 'undefined' ? window.location.pathname : '/'
-            let currentSearch =
-              typeof window !== 'undefined' ? window.location.search : ''
-
-            if (typeof window !== 'undefined') {
-              currentPath = window.location.pathname
-              currentSearch = window.location.search
-            }
-
-            if (currentPath === '/join') {
-              try {
-                const params = new URLSearchParams(currentSearch)
-                const joinId = params.get('id')
-                const joinName = params.get('name')
-                if (joinId) {
-                  const target = new URLSearchParams({ joinId })
-                  if (joinName) {
-                    target.set('joinName', joinName)
-                  }
-                  navigate(`/auth/check?${target.toString()}`)
-                } else {
-                  navigate('/auth/check')
-                }
-              } catch {
-                navigate('/auth/check')
-              }
-            } else {
-              navigate('/auth/check')
-            }
+          // For judge-only app, redirect to 404 if not on auth or home paths
+          if (currentPath !== '/' && currentPath !== '/auth' && !currentSearch.includes('token=')) {
+            navigate('/404')
           }
         } catch (error) {
           console.error('API Ping failed:', error)
@@ -221,20 +124,13 @@
     return () => {
       isActive = false
       cleanupPWAListeners()
-      if (accountUnsubscribe) {
-        accountUnsubscribe()
-        accountUnsubscribe = null
-      }
-      if (flagsPollingActive) {
-        stopFlagPolling()
-        flagsPollingActive = false
-      }
     }
   })
 </script>
 
 {#if isLoading}
-  <Loading />
+  <!-- Blank loading state - no shimmer animation for judge experience -->
+  <div class="min-h-screen bg-black"></div>
 {:else if pingFailed && isDesktop}
   <DesktopNotFound />
 {:else if pingFailed && !isDesktop}
@@ -242,31 +138,10 @@
 {:else if isDesktop}
   <Router {url}>
     <Route path="/">
-      <DesktopIndex />
+      <DesktopJudging />
     </Route>
-    <Route path="/team">
-      <DesktopTeam />
-    </Route>
-    <Route path="/vote">
-      <DesktopVote />
-    </Route>
-    <Route path="/submission">
-      <DesktopSubmissions />
-    </Route>
-    <Route path="/join">
-      <DesktopJoin />
-    </Route>
-    <Route path="/qr-test">
-      <DesktopQrTest />
-    </Route>
-    <Route path="/auth/check">
-      <DesktopCheck />
-    </Route>
-    <Route path="/auth/register">
-      <DesktopRegister />
-    </Route>
-    <Route path="/auth/login">
-      <DesktopLogin />
+    <Route path="/auth">
+      <DesktopJudge />
     </Route>
     <Route path="/404">
       <DesktopNotFound />
@@ -278,28 +153,10 @@
 {:else}
   <Router {url}>
     <Route path="/">
-      <MobileIndex />
+      <MobileJudging />
     </Route>
-    <Route path="/team">
-      <MobileTeam />
-    </Route>
-    <Route path="/vote">
-      <MobileVote />
-    </Route>
-    <Route path="/submission">
-      <MobileSubmissions />
-    </Route>
-    <Route path="/join">
-      <MobileJoin />
-    </Route>
-    <Route path="/auth/check">
-      <MobileCheck />
-    </Route>
-    <Route path="/auth/register">
-      <MobileRegister />
-    </Route>
-    <Route path="/auth/login">
-      <MobileLogin />
+    <Route path="/auth">
+      <MobileJudge />
     </Route>
     <Route path="/404">
       <MobileNotFound />

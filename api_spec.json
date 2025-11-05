@@ -4,7 +4,7 @@
         "description": "Backend API for OpenHack handling participant accounts, teams, feature flags, and superuser check-in tooling.",
         "title": "OpenHack Backend API",
         "contact": {},
-        "version": "25.11.04.2"
+        "version": "25.11.05.0"
     },
     "basePath": "/",
     "paths": {
@@ -428,6 +428,61 @@
                 }
             }
         },
+        "/judge/current-team": {
+            "get": {
+                "security": [
+                    {
+                        "JudgeAuth": []
+                    }
+                ],
+                "description": "Returns the full team details for the judge's current assignment based on their rotation state.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Judges"
+                ],
+                "summary": "Get current team for judging",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgeResting"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._TeamNotFound"
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgingFinished"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/judge/judgment": {
             "post": {
                 "security": [
@@ -498,13 +553,25 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/errmsg._JudgingFinished"
+                            "$ref": "#/definitions/judge.NextTeamResponse"
+                        }
+                    },
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgeResting"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgingFinished"
                         }
                     },
                     "500": {
@@ -2930,6 +2997,19 @@
                 }
             }
         },
+        "errmsg._JudgeResting": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "judge resting"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 202
+                }
+            }
+        },
         "errmsg._JudgingFinished": {
             "type": "object",
             "properties": {
@@ -2939,7 +3019,7 @@
                 },
                 "statusCode": {
                     "type": "integer",
-                    "example": 200
+                    "example": 410
                 }
             }
         },
@@ -3205,12 +3285,6 @@
                 },
                 "firstName": {
                     "type": "string"
-                },
-                "flags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "foodRestrictions": {
                     "type": "string"

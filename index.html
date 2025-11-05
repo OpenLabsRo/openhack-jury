@@ -79,16 +79,6 @@
         src: url('/fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype');
       }
 
-      :root {
-        --logo-animation-size: 120px;
-      }
-
-      @media (max-width: 400px) {
-        :root {
-          --logo-animation-size: 20vw;
-        }
-      }
-
       body {
         margin: 0;
         padding: 0;
@@ -99,76 +89,13 @@
       #loading {
         position: fixed;
         inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: min(320px, 90vw);
-        height: clamp(160px, 40vh, 280px);
-        margin: auto;
-      }
-
-      .logo-animation {
-        width: var(--logo-animation-size);
-        height: var(--logo-animation-size);
-        mask-image: linear-gradient(
-          -75deg,
-          rgba(0, 0, 0, 0.4) 30%,
-          #000 50%,
-          rgba(0, 0, 0, 0.4) 70%
-        );
-        -webkit-mask-image: linear-gradient(
-          -75deg,
-          rgba(0, 0, 0, 0.4) 30%,
-          #000 50%,
-          rgba(0, 0, 0, 0.4) 70%
-        );
-        mask-size: 200%;
-        -webkit-mask-size: 200%;
-        animation: shimmer 2s linear infinite;
-      }
-
-      @keyframes shimmer {
-        0% {
-          -webkit-mask-position: 200%;
-          mask-position: 200%;
-        }
-        100% {
-          -webkit-mask-position: -200%;
-          mask-position: -200%;
-        }
+        display: none;
       }
     </style>
   </head>
   <body>
     <div id="app">
-      <div id="loading">
-        <svg
-          class="logo-animation"
-          width="1000"
-          height="1000"
-          viewBox="0 0 1000 1000"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M500 0C511.111 154.815 626.667 471.556 1000 500C848.148 506.667 535.556 616 500 1000C464.444 616 151.852 506.667 0 500C373.333 471.556 488.889 154.815 500 0ZM498.096 302.222C493.701 363.459 447.992 488.747 300.318 499.999C360.384 502.636 484.032 545.884 498.096 697.777C512.16 545.884 635.808 502.636 695.874 499.999C548.2 488.748 502.491 363.46 498.096 302.222Z"
-            fill="url(#paint0_linear_119_2979)"
-          />
-          <defs>
-            <linearGradient
-              id="paint0_linear_119_2979"
-              x1="1000"
-              y1="-162.791"
-              x2="0"
-              y2="1000"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop stop-color="#FFAB2E" />
-              <stop offset="1" stop-color="#FF0022" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
+      <div id="loading"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

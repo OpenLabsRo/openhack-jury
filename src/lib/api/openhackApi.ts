@@ -9,6 +9,14 @@ import type {
 } from '$types/account.js'
 import type { Team, TeamPreview } from '$types/team.js'
 import type { Flags } from '$types/flags.js'
+import type {
+  JudgeUpgradeRequest,
+  JudgeUpgradeResponse,
+  NextTeamResponse,
+  Team as JudgeTeam,
+  CreateJudgmentRequest,
+  Judgment,
+} from '$types/judge.js'
 
 // Error helpers --------------------------------------------------------------------------------
 
@@ -202,7 +210,27 @@ export function createApiHelpers(apiClient: AxiosInstance = api) {
       ),
   }
 
-  return { Accounts, Teams, Submissions, Flags, General, Voting }
+  const Judges = {
+    // upgrade exchanges a short QR connect token for a full 24-hour judge session token.
+    upgrade: (payload: JudgeUpgradeRequest) =>
+      request<JudgeUpgradeResponse>(() =>
+        apiClient.post('/judge/upgrade', payload)
+      ),
+    // currentTeam retrieves the full team details for the judge's current assignment.
+    currentTeam: () =>
+      request<JudgeTeam>(() => apiClient.get('/judge/current-team')),
+    // team retrieves detailed information about a specific team by ID.
+    team: (teamId: string) =>
+      request<JudgeTeam>(() => apiClient.get('/judge/team', { params: { id: teamId } })),
+    // nextTeam returns the next team ID for the judge to evaluate.
+    nextTeam: () =>
+      request<NextTeamResponse>(() => apiClient.post('/judge/next-team')),
+    // judgment records a judgment comparing two teams and selects a winner.
+    judgment: (payload: CreateJudgmentRequest) =>
+      request<Judgment>(() => apiClient.post('/judge/judgment', payload)),
+  }
+
+  return { Accounts, Teams, Submissions, Flags, General, Voting, Judges }
 }
 
 export const openhackApi = createApiHelpers()
