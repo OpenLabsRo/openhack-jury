@@ -428,6 +428,46 @@
                 }
             }
         },
+        "/judge/all-teams": {
+            "get": {
+                "security": [
+                    {
+                        "JudgeAuth": []
+                    }
+                ],
+                "description": "Returns a list of all teams in the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Judges"
+                ],
+                "summary": "Get all teams",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Team"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/judge/current-team": {
             "get": {
                 "security": [
@@ -534,6 +574,43 @@
                 }
             }
         },
+        "/judge/me": {
+            "get": {
+                "security": [
+                    {
+                        "JudgeAuth": []
+                    }
+                ],
+                "description": "Returns the judge's current team step and the next available time they can create a judgment.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Judges"
+                ],
+                "summary": "Get judge information",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/judge.JudgeInfoResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/judge/next-team": {
             "post": {
                 "security": [
@@ -553,7 +630,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/judge.NextTeamResponse"
+                            "$ref": "#/definitions/models.Team"
                         }
                     },
                     "202": {
@@ -1253,63 +1330,6 @@
                 }
             }
         },
-        "/superusers/judges/connect": {
-            "post": {
-                "security": [
-                    {
-                        "SuperUserAuth": []
-                    }
-                ],
-                "description": "Creates a short-lived 2-minute token that is displayed via QR code for judges to scan and exchange for a full session token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Superusers Judging"
-                ],
-                "summary": "Generate judge connect token",
-                "parameters": [
-                    {
-                        "description": "Judge ID",
-                        "name": "payload",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/judging.JudgeConnectRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/judging.JudgeConnectResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/errmsg._JudgeNotFound"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errmsg._InternalServerError"
-                        }
-                    }
-                }
-            }
-        },
         "/superusers/judging/compute-rankings": {
             "post": {
                 "security": [
@@ -1434,6 +1454,63 @@
                         "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/errmsg._JudgeAlreadyExists"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/superusers/judging/judge/connect": {
+            "post": {
+                "security": [
+                    {
+                        "SuperUserAuth": []
+                    }
+                ],
+                "description": "Creates a short-lived 2-minute token that is displayed via QR code for judges to scan and exchange for a full session token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Superusers Judging"
+                ],
+                "summary": "Generate judge connect token",
+                "parameters": [
+                    {
+                        "description": "Judge ID",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/judging.JudgeConnectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/judging.JudgeConnectResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._SuperUserNoToken"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgeNotFound"
                         }
                     },
                     "500": {
@@ -3172,6 +3249,19 @@
                 }
             }
         },
+        "judge.JudgeInfoResponse": {
+            "type": "object",
+            "properties": {
+                "currentTeam": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "nextTeamTime": {
+                    "type": "string",
+                    "example": "2024-01-01T12:05:00Z"
+                }
+            }
+        },
         "judge.JudgeUpgradeRequest": {
             "type": "object",
             "properties": {
@@ -3188,15 +3278,6 @@
                 },
                 "token": {
                     "type": "string"
-                }
-            }
-        },
-        "judge.NextTeamResponse": {
-            "type": "object",
-            "properties": {
-                "teamID": {
-                    "type": "string",
-                    "example": "team_001"
                 }
             }
         },
@@ -3391,6 +3472,9 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "nextTeamTime": {
                     "type": "string"
                 },
                 "pair": {

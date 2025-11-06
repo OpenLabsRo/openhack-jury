@@ -6,7 +6,7 @@
   }
 </script>
 
-<div class="flex items-center justify-between bg-black px-8 py-6 border-b border-white/10">
+<div class="flex items-center justify-center bg-black px-8 py-6">
   <button
     type="button"
     class="rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
@@ -15,5 +15,4 @@
   >
     <img src="/icons/logo-full.svg" alt="OpenHack" class="h-10 w-auto" />
   </button>
-  <div class="text-white text-sm font-medium">Judge Interface</div>
 </div>

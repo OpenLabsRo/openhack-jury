@@ -11,6 +11,7 @@ export interface Judge {
   name: string
   currentTeam: number
   pair: string
+  nextTeamTime: string
 }
 
 export interface JudgeUpgradeResponse {
@@ -18,9 +19,7 @@ export interface JudgeUpgradeResponse {
   judge: Judge
 }
 
-export interface NextTeamResponse {
-  teamID: string
-}
+export type NextTeamResponse = Team
 
 export interface TeamSubmission {
   name?: string

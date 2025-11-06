@@ -216,12 +216,19 @@ export function createApiHelpers(apiClient: AxiosInstance = api) {
       request<JudgeUpgradeResponse>(() =>
         apiClient.post('/judge/upgrade', payload)
       ),
+    // me retrieves the current judge's info including currentTeam index and nextTeamTime.
+    me: () =>
+      request<{ currentTeam: number | string; nextTeamTime: string }>(() =>
+        apiClient.get('/judge/me')
+      ),
     // currentTeam retrieves the full team details for the judge's current assignment.
     currentTeam: () =>
       request<JudgeTeam>(() => apiClient.get('/judge/current-team')),
     // team retrieves detailed information about a specific team by ID.
     team: (teamId: string) =>
-      request<JudgeTeam>(() => apiClient.get('/judge/team', { params: { id: teamId } })),
+      request<JudgeTeam>(() =>
+        apiClient.get('/judge/team', { params: { id: teamId } })
+      ),
     // nextTeam returns the next team ID for the judge to evaluate.
     nextTeam: () =>
       request<NextTeamResponse>(() => apiClient.post('/judge/next-team')),

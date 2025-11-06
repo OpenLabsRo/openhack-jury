@@ -4,6 +4,8 @@
   import './app.css'
   import { openhackApi } from '$lib/api/openhackApi'
   import { navigate } from 'svelte5-router'
+  import { getToken } from '$lib/auth'
+  import { initJudgeSession } from '$runes/judgingRune'
   import {
     shouldShowInstallPrompt,
     setupPWAListeners,
@@ -12,15 +14,18 @@
   // desktop routes
   import DesktopJudge from '$routes/desktop/auth/Judge.svelte'
   import DesktopJudging from '$routes/desktop/Judge.svelte'
+  import DesktopTeams from '$routes/desktop/Teams.svelte'
   import DesktopNotFound from '$routes/desktop/auth/NotFound.svelte'
 
   // mobile routes
   import MobileJudge from '$routes/mobile/auth/Judge.svelte'
   import MobileJudging from '$routes/mobile/Judge.svelte'
+  import MobileTeams from '$routes/mobile/Teams.svelte'
   import MobileNotFound from '$routes/mobile/auth/NotFound.svelte'
 
   // shared components
   import PWAInstallPrompt from '$lib/components/shared/PWAInstallPrompt.svelte'
+  import BottomNav from '$lib/components/shared/BottomNav.svelte'
 
   export let url = ''
   let isAuthPage = false
@@ -74,6 +79,34 @@
     let isActive = true
 
     const run = async () => {
+      // Check if there is a token; if not and not on auth page, redirect to 404
+      const token = getToken()
+      const currentPath =
+        typeof window !== 'undefined' ? window.location.pathname : '/'
+      const currentSearch =
+        typeof window !== 'undefined' ? window.location.search : ''
+
+      // Allow auth page (where token might be in URL) and redirect pages
+      const isAuthPage =
+        currentPath === '/auth' || currentSearch.includes('token=')
+      const isNotFoundPage = currentPath === '/404'
+
+      if (!token && !isAuthPage && !isNotFoundPage) {
+        console.log(
+          '[App] No token found and not on auth page; redirecting to 404'
+        )
+        if (isActive) {
+          navigate('/404')
+          isLoading = false
+          return
+        }
+      }
+
+      // Restore judge session from stored token if available
+      if (token) {
+        await initJudgeSession()
+      }
+
       const sessionCheck = async () => {
         if (is404Page || !isActive) return
 
@@ -98,7 +131,11 @@
           }
 
           // For judge-only app, redirect to 404 if not on auth or home paths
-          if (currentPath !== '/' && currentPath !== '/auth' && !currentSearch.includes('token=')) {
+          if (
+            currentPath !== '/' &&
+            currentPath !== '/auth' &&
+            !currentSearch.includes('token=')
+          ) {
             navigate('/404')
           }
         } catch (error) {
@@ -140,6 +177,9 @@
     <Route path="/">
       <DesktopJudging />
     </Route>
+    <Route path="/teams">
+      <DesktopTeams />
+    </Route>
     <Route path="/auth">
       <DesktopJudge />
     </Route>
@@ -155,6 +195,9 @@
     <Route path="/">
       <MobileJudging />
     </Route>
+    <Route path="/teams">
+      <MobileTeams />
+    </Route>
     <Route path="/auth">
       <MobileJudge />
     </Route>
@@ -168,4 +211,5 @@
 {/if}
 
 <!-- PWA Install Prompt Modal -->
+<BottomNav />
 <PWAInstallPrompt show={!isLoading && showInstallPrompt} {deferredPrompt} />

@@ -11,4 +11,3 @@ if (target) {
     target: target,
   })
 }
-
