@@ -22,8 +22,8 @@ export function resolveApiBase(): string {
   const deployment = envFromProcess || envFromMeta || 'dev'
 
   // return 'https://alpha.openhack.ro'
-  // return 'https://api.openhack.ro'
-  return 'http://localhost:9000/'
+  return 'https://api.openhack.ro'
+  // return 'http://localhost:9000/'
 }
 
 // createApi(baseURL?) -> returns a configured Axios instance.
