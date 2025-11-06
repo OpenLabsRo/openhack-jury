@@ -31,6 +31,7 @@ import { flagsRune } from './flagsRune.js'
  */
 export const judgeDataRune = writable<Judge | null>(null)
 export const currentTeamRune = writable<Team | null>(null)
+export const previousTeamRune = writable<Team | null>(null)
 export const selectedWinnerRune = writable<string | null>(null)
 export const isJudgingFinishedRune = writable<boolean>(false)
 
@@ -171,6 +172,16 @@ export async function initJudgeSession(): Promise<Judge | null> {
 
     const currentJudge = get(judgeDataRune)
 
+    // Check if judging is finished (currentTeam === 9000)
+    if (currentJudge && currentJudge.currentTeam === 9000) {
+      console.log(
+        '[initJudgeSession] Judging finished detected (currentTeam === 9000)'
+      )
+      isJudgingFinishedRune.set(true)
+      clearError()
+      return currentJudge
+    }
+
     // If judge has an active team assignment, restore team details
     if (currentJudge && currentJudge.currentTeam >= 0) {
       try {
@@ -193,6 +204,28 @@ export async function initJudgeSession(): Promise<Judge | null> {
           '[currentTeamRune] Failed to restore current team details:',
           err
         )
+      }
+
+      // If currentTeam > 0, restore previous team details
+      if (currentJudge.currentTeam > 0) {
+        try {
+          const prevTeam = await openhackApi.Judges.previousTeam()
+          console.log(
+            '[previousTeamRune] Restored from /judge/previous-team on startup:',
+            {
+              id: prevTeam.id,
+              name: prevTeam.name,
+              table: prevTeam.table,
+            }
+          )
+          previousTeamRune.set(prevTeam)
+        } catch (err) {
+          // Non-fatal: at least we have the current team
+          console.warn(
+            '[previousTeamRune] Failed to restore previous team details:',
+            err
+          )
+        }
       }
     }
 
@@ -290,11 +323,15 @@ export async function getNextTeam() {
       if (resp && typeof resp === 'object' && 'id' in resp) {
         const nextTeam = resp as Team
         console.log('currentTeamRune updated:', nextTeam)
+        // Store current team as previous before updating
+        previousTeamRune.set(get(currentTeamRune))
         currentTeamRune.set(nextTeam)
       } else if (resp && typeof resp === 'object' && 'message' in resp) {
         // Resting response (202) - clear current team so UI can render a Resting element
         const resting = (resp as { message?: string }).message ?? 'Resting'
         console.log('currentTeamRune cleared (resting):', resting)
+        // Store current team as previous before clearing
+        previousTeamRune.set(get(currentTeamRune))
         currentTeamRune.set(null)
       } else {
         // Unexpected shape - clear current team to be safe
@@ -302,14 +339,17 @@ export async function getNextTeam() {
           'currentTeamRune cleared (unexpected nextTeam shape):',
           resp
         )
+        // Store current team as previous before clearing
+        previousTeamRune.set(get(currentTeamRune))
         currentTeamRune.set(null)
       }
 
       // Refresh judge metadata from /judge/me (server is source of truth for currentTeam index)
       await fetchAndUpdateJudgeMe()
+
       clearError()
 
-      return resp as Team
+      return resp
     } catch (error) {
       // Check if this is a 410 (judging finished)
       if (isApiError(error) && error.status === 410) {
@@ -336,10 +376,30 @@ export async function getNextTeam() {
 export async function recordJudgment(winnerID: string, loserID: string) {
   return withInFlightLoading(async () => {
     try {
+      // Resolve team IDs from runes
+      const current = get(currentTeamRune)
+      const previous = get(previousTeamRune)
+
+      // Determine which team is the winner and which is the loser
+      let winningTeamID: string
+      let losingTeamID: string
+
+      if (winnerID === 'current' && current) {
+        winningTeamID = current.id
+        losingTeamID = previous?.id || loserID
+      } else if (winnerID === 'previous' && previous) {
+        winningTeamID = previous.id
+        losingTeamID = current?.id || loserID
+      } else {
+        // Fallback to direct IDs if passed
+        winningTeamID = winnerID
+        losingTeamID = loserID
+      }
+
       // Submit the judgment
       const judgment: Judgment = await openhackApi.Judges.judgment({
-        winningTeamID: winnerID,
-        losingTeamID: loserID,
+        winningTeamID,
+        losingTeamID,
       })
 
       // Automatically fetch the next team
@@ -351,16 +411,22 @@ export async function recordJudgment(winnerID: string, loserID: string) {
         if (resp && typeof resp === 'object' && 'id' in resp) {
           const nextTeam = resp as Team
           console.log('currentTeamRune updated:', nextTeam)
+          // Store current team as previous before updating
+          previousTeamRune.set(get(currentTeamRune))
           currentTeamRune.set(nextTeam)
         } else if (resp && typeof resp === 'object' && 'message' in resp) {
           const resting = (resp as { message?: string }).message ?? 'Resting'
           console.log('currentTeamRune cleared (resting):', resting)
+          // Store current team as previous before clearing
+          previousTeamRune.set(get(currentTeamRune))
           currentTeamRune.set(null)
         } else {
           console.log(
             'currentTeamRune cleared (unexpected nextTeam shape):',
             resp
           )
+          // Store current team as previous before clearing
+          previousTeamRune.set(get(currentTeamRune))
           currentTeamRune.set(null)
         }
 
@@ -401,6 +467,8 @@ export function detectJudgingFinished(error: unknown): boolean {
 export function reset() {
   console.log('[judgeDataRune] Cleared on reset')
   judgeDataRune.set(null as any)
+  console.log('[previousTeamRune] Cleared on reset')
+  previousTeamRune.set(null)
   console.log('[currentTeamRune] Cleared on reset')
   currentTeamRune.set(null)
   console.log('[selectedWinnerRune] Cleared on reset')

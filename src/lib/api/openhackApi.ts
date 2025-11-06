@@ -224,6 +224,9 @@ export function createApiHelpers(apiClient: AxiosInstance = api) {
     // currentTeam retrieves the full team details for the judge's current assignment.
     currentTeam: () =>
       request<JudgeTeam>(() => apiClient.get('/judge/current-team')),
+    // previousTeam retrieves the full team details for the judge's previous assignment.
+    previousTeam: () =>
+      request<JudgeTeam>(() => apiClient.get('/judge/previous-team')),
     // team retrieves detailed information about a specific team by ID.
     team: (teamId: string) =>
       request<JudgeTeam>(() =>

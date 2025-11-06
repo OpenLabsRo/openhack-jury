@@ -6,7 +6,7 @@
   }
 </script>
 
-<div class="flex items-center justify-between bg-black px-6 py-4">
+<div class="flex items-center justify-center bg-black px-6 py-4">
   <button
     type="button"
     class="rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"

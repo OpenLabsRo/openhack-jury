@@ -31,7 +31,10 @@
 
   function startTimer() {
     calculateTimeRemaining()
-    intervalHandle = setInterval(calculateTimeRemaining, 1000) as unknown as number
+    intervalHandle = setInterval(
+      calculateTimeRemaining,
+      1000
+    ) as unknown as number
   }
 
   onMount(() => {
@@ -61,11 +64,20 @@
 </script>
 
 {#if isVisible && nextTeamTime}
-  <div class="flex items-center justify-center gap-2 py-4 px-4 rounded-lg bg-[#0B0B0B] border border-[#2E2E2E]">
-    <svg class="h-5 w-5 text-[#FE5428]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <div
+    class="flex items-center justify-center gap-4 text-white"
+    style="font-family: 'Inter', sans-serif;"
+  >
+    <svg
+      class="h-6 w-6 text-white flex-shrink-0"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
       <circle cx="12" cy="12" r="10"></circle>
       <polyline points="12 6 12 12 16 14"></polyline>
     </svg>
-    <span class="text-white font-mono text-lg">{timeRemaining}</span>
+    <span class="text-2xl font-semibold tracking-wider">{timeRemaining}</span>
   </div>
 {/if}

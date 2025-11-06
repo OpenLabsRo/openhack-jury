@@ -12,20 +12,17 @@
   } from '$lib/utils/pwaInitialize'
 
   // desktop routes
-  import DesktopJudge from '$routes/desktop/auth/Judge.svelte'
+  import DesktopAuth from '$routes/desktop/Auth.svelte'
   import DesktopJudging from '$routes/desktop/Judge.svelte'
-  import DesktopTeams from '$routes/desktop/Teams.svelte'
-  import DesktopNotFound from '$routes/desktop/auth/NotFound.svelte'
+  import DesktopNotFound from '$routes/desktop/NotFound.svelte'
 
   // mobile routes
-  import MobileJudge from '$routes/mobile/auth/Judge.svelte'
+  import MobileAuth from '$routes/mobile/Auth.svelte'
   import MobileJudging from '$routes/mobile/Judge.svelte'
-  import MobileTeams from '$routes/mobile/Teams.svelte'
-  import MobileNotFound from '$routes/mobile/auth/NotFound.svelte'
+  import MobileNotFound from '$routes/mobile/NotFound.svelte'
 
   // shared components
   import PWAInstallPrompt from '$lib/components/shared/PWAInstallPrompt.svelte'
-  import BottomNav from '$lib/components/shared/BottomNav.svelte'
 
   export let url = ''
   let isAuthPage = false
@@ -177,11 +174,8 @@
     <Route path="/">
       <DesktopJudging />
     </Route>
-    <Route path="/teams">
-      <DesktopTeams />
-    </Route>
     <Route path="/auth">
-      <DesktopJudge />
+      <DesktopAuth />
     </Route>
     <Route path="/404">
       <DesktopNotFound />
@@ -195,11 +189,8 @@
     <Route path="/">
       <MobileJudging />
     </Route>
-    <Route path="/teams">
-      <MobileTeams />
-    </Route>
     <Route path="/auth">
-      <MobileJudge />
+      <MobileAuth />
     </Route>
     <Route path="/404">
       <MobileNotFound />
@@ -211,5 +202,4 @@
 {/if}
 
 <!-- PWA Install Prompt Modal -->
-<BottomNav />
 <PWAInstallPrompt show={!isLoading && showInstallPrompt} {deferredPrompt} />
