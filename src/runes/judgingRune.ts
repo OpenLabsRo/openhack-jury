@@ -206,10 +206,16 @@ export async function initJudgeSession(): Promise<Judge | null> {
         )
       }
 
-      // If currentTeam > 0, restore previous team details
-      if (currentJudge.currentTeam > 0) {
-        try {
-          const prevTeam = await openhackApi.Judges.previousTeam()
+      // Always restore previous team details (even at currentTeam === 0)
+      try {
+        const prevTeamResp = await openhackApi.Judges.previousTeam()
+        // Check if response is a resting response (has 'message' field) or a team (has 'id' field)
+        if (
+          prevTeamResp &&
+          typeof prevTeamResp === 'object' &&
+          'id' in prevTeamResp
+        ) {
+          const prevTeam = prevTeamResp as Team
           console.log(
             '[previousTeamRune] Restored from /judge/previous-team on startup:',
             {
@@ -219,13 +225,20 @@ export async function initJudgeSession(): Promise<Judge | null> {
             }
           )
           previousTeamRune.set(prevTeam)
-        } catch (err) {
-          // Non-fatal: at least we have the current team
-          console.warn(
-            '[previousTeamRune] Failed to restore previous team details:',
-            err
+        } else {
+          // Resting response - set previousTeamRune to null (default value)
+          console.log(
+            '[previousTeamRune] Judge is resting on startup, setting to null'
           )
+          previousTeamRune.set(null)
         }
+      } catch (err) {
+        // Non-fatal: at least we have the current team
+        console.warn(
+          '[previousTeamRune] Failed to restore previous team details:',
+          err
+        )
+        previousTeamRune.set(null)
       }
     }
 
@@ -305,43 +318,57 @@ export async function startJudging() {
 
 /**
  * getNextTeam()
- * - Purpose: Fetch the next team from the backend rotation.
+ * - Purpose: Fetch the next team from the backend rotation and populate currentTeamRune.
+ *           Then fetch the previous team and populate previousTeamRune.
  * - Output: The full Team object for the next opponent
- * - Side effects: Updates currentTeamRune with new team data
+ * - Side effects: Updates currentTeamRune with next team, then updates previousTeamRune
  * - Error modes: 410 Gone (judging finished) is not thrown; use detectJudgingFinished to check
  */
 export async function getNextTeam() {
   return withInFlightLoading(async () => {
     try {
-      // nextTeam may return either a Team (normal case) or a resting payload (202) with { message }.
-      // We increment the judge's currentTeam counter every time we call nextTeam, even if the judge
-      // is resting (202). If the response contains a Team object we populate currentTeamRune; if it
-      // signals resting we clear currentTeamRune (so UI can show a resting state).
-      const resp = await openhackApi.Judges.nextTeam()
+      // Step 1: Fetch next team and populate currentTeamRune
+      const nextResp = await openhackApi.Judges.nextTeam()
 
-      // Determine whether `resp` is a Team (has id) or a resting payload (has message).
-      if (resp && typeof resp === 'object' && 'id' in resp) {
-        const nextTeam = resp as Team
+      // Determine whether `nextResp` is a Team (has id) or a resting payload (has message).
+      if (nextResp && typeof nextResp === 'object' && 'id' in nextResp) {
+        const nextTeam = nextResp as Team
         console.log('currentTeamRune updated:', nextTeam)
-        // Store current team as previous before updating
-        previousTeamRune.set(get(currentTeamRune))
         currentTeamRune.set(nextTeam)
-      } else if (resp && typeof resp === 'object' && 'message' in resp) {
+      } else if (
+        nextResp &&
+        typeof nextResp === 'object' &&
+        'message' in nextResp
+      ) {
         // Resting response (202) - clear current team so UI can render a Resting element
-        const resting = (resp as { message?: string }).message ?? 'Resting'
+        const resting = (nextResp as { message?: string }).message ?? 'Resting'
         console.log('currentTeamRune cleared (resting):', resting)
-        // Store current team as previous before clearing
-        previousTeamRune.set(get(currentTeamRune))
         currentTeamRune.set(null)
       } else {
         // Unexpected shape - clear current team to be safe
         console.log(
           'currentTeamRune cleared (unexpected nextTeam shape):',
-          resp
+          nextResp
         )
-        // Store current team as previous before clearing
-        previousTeamRune.set(get(currentTeamRune))
         currentTeamRune.set(null)
+      }
+
+      // Step 2: Fetch previous team and populate previousTeamRune
+      try {
+        const prevResp = await openhackApi.Judges.previousTeam()
+        if (prevResp && typeof prevResp === 'object' && 'id' in prevResp) {
+          const prevTeam = prevResp as Team
+          console.log('previousTeamRune updated:', prevTeam)
+          previousTeamRune.set(prevTeam)
+        } else {
+          // Resting response or unexpected shape - set previousTeamRune to null
+          console.log('previousTeamRune set to null')
+          previousTeamRune.set(null)
+        }
+      } catch (err) {
+        // Non-fatal: at least we have the current team
+        console.warn('[previousTeamRune] Failed to fetch previous team:', err)
+        previousTeamRune.set(null)
       }
 
       // Refresh judge metadata from /judge/me (server is source of truth for currentTeam index)
@@ -349,7 +376,7 @@ export async function getNextTeam() {
 
       clearError()
 
-      return resp
+      return nextResp
     } catch (error) {
       // Check if this is a 410 (judging finished)
       if (isApiError(error) && error.status === 410) {

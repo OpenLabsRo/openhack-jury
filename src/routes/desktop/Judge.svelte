@@ -38,11 +38,11 @@
 
   $: judgingEnabled = Boolean($flagsRune?.flags?.judging)
   $: isAwaitingStart = $judgeDataRune?.currentTeam === -1
-  $: isFirstTeam = $judgeDataRune?.currentTeam === 0
-  $: isComparing =
-    ($judgeDataRune?.currentTeam ?? -1) > 0 && $currentTeamRune !== null
+  $: isFirstTeam = $currentTeamRune?.id && $previousTeamRune === null
+  $: isComparing = $currentTeamRune?.id && $previousTeamRune?.id
+  $: isResting = !$currentTeamRune?.id
 
-  $: timerVisible = $judgeDataRune?.currentTeam !== -1
+  $: timerVisible = $judgeDataRune?.currentTeam !== -1 && judgingEnabled
 
   function getTeamCardClass(selected: boolean = false): string {
     const base =
@@ -97,14 +97,58 @@
   }
 
   $: confirmDialogTitle =
-    pendingWinnerSelection === 'previous'
-      ? 'Select Previous Team?'
-      : 'Select Current Team?'
+    pendingWinnerSelection === 'previous' && $previousTeamRune
+      ? `Select "${$previousTeamRune.name}"?`
+      : pendingWinnerSelection === 'previous'
+        ? 'Select Previous Team?'
+        : $currentTeamRune
+          ? `Select "${$currentTeamRune.name}"?`
+          : 'Select Current Team?'
 
   $: confirmDialogDescription =
-    pendingWinnerSelection === 'previous'
-      ? 'You are choosing the previous team as the winner.'
-      : `You are choosing ${$currentTeamRune?.name || 'Current Team'} as the winner.`
+    pendingWinnerSelection === 'previous' && $previousTeamRune
+      ? `Do you wish to select "${$previousTeamRune.name}" as the winner?`
+      : pendingWinnerSelection === 'previous'
+        ? `Do you wish to select the previous team as the winner?`
+        : $currentTeamRune
+          ? `Do you wish to select "${$currentTeamRune.name}" as the winner?`
+          : `Do you wish to select the current team as the winner?`
+
+  // Comprehensive debug logging as reactive statement
+  $: {
+    console.log('===== JUDGE STATE DEBUG (Desktop) =====')
+    console.log('RUNES:')
+    console.log('  judgeDataRune:', {
+      id: $judgeDataRune?.id || null,
+      name: $judgeDataRune?.name || null,
+      currentTeam: $judgeDataRune?.currentTeam,
+      pair: $judgeDataRune?.pair || null,
+      nextTeamTime: $judgeDataRune?.nextTeamTime || null,
+    })
+    console.log('  currentTeamRune:', {
+      id: $currentTeamRune?.id || null,
+      name: $currentTeamRune?.name || null,
+      table: $currentTeamRune?.table || null,
+    })
+    console.log('  previousTeamRune:', {
+      id: $previousTeamRune?.id || null,
+      name: $previousTeamRune?.name || null,
+      table: $previousTeamRune?.table || null,
+    })
+    console.log('  selectedWinnerRune:', $selectedWinnerRune)
+    console.log('  isJudgingFinishedRune:', $isJudgingFinishedRune)
+    console.log('  flagsRune:', $flagsRune)
+    console.log('  inFlightLoading:', $inFlightLoading)
+    console.log('')
+    console.log('COMPUTED VARIABLES:')
+    console.log('  judgingEnabled:', judgingEnabled)
+    console.log('  isAwaitingStart:', isAwaitingStart)
+    console.log('  isFirstTeam:', isFirstTeam)
+    console.log('  isComparing:', isComparing)
+    console.log('  isResting:', isResting)
+    console.log('  timerVisible:', timerVisible)
+    console.log('=====================================')
+  }
 </script>
 
 <LoadingOverlay isVisible={$inFlightLoading} />
@@ -156,7 +200,7 @@
           {$inFlightLoading ? 'Loading...' : 'Start Judging'}
         </Button>
       </div>
-    {:else if !isAwaitingStart && !$currentTeamRune}
+    {:else if isResting}
       <!-- Resting state: judge has no current team assigned -->
       <div class="max-w-lg mx-auto text-center space-y-4 mt-24">
         <h1 class="text-3xl font-bold text-white">Resting</h1>
@@ -164,84 +208,22 @@
           You're currently between matches. Please wait — the system will assign
           the next team when ready.
         </p>
-      </div>
-    {:else if isFirstTeam && $currentTeamRune}
-      <!-- First team: show details and next button -->
-      <div class="w-full space-y-6">
-        <h2 class="text-2xl font-bold text-white text-center">
-          Go to Table {$currentTeamRune.table || 'N/A'}
-        </h2>
-        <div class={getTeamCardClass(false)}>
-          <div>
-            <h3 class="text-white text-2xl font-semibold">
-              {$currentTeamRune.name}
-            </h3>
-            {#if $currentTeamRune.table}
-              <p class="text-gray-500 mt-2 text-sm">
-                Table {$currentTeamRune.table}
-              </p>
-            {/if}
-          </div>
-          <div class="space-y-5 text-base">
-            {#if $currentTeamRune.submission?.name}
-              <div>
-                <p class="text-gray-400 font-medium">Submission</p>
-                <p class="text-white mt-2">
-                  {$currentTeamRune.submission.name}
-                </p>
-              </div>
-            {/if}
-            {#if $currentTeamRune.submission?.desc}
-              <div>
-                <p class="text-gray-400 font-medium">Description</p>
-                <p class="text-white mt-2 leading-relaxed">
-                  {$currentTeamRune.submission.desc}
-                </p>
-              </div>
-            {/if}
-            {#if $currentTeamRune.submission?.repo}
-              <div>
-                <p class="text-gray-400 font-medium">Repository</p>
-                <a
-                  href={$currentTeamRune.submission.repo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-white hover:underline break-all inline-flex items-center gap-2 mt-2 text-sm"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                    ><path
-                      d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-                    /></svg
-                  >
-                  Open on GitHub
-                </a>
-              </div>
-            {/if}
-          </div>
-        </div>
         <Button
           on:click={handleStartJudging}
           disabled={$inFlightLoading}
-          class="w-full bg-[#FE5428] hover:bg-[#e64520] text-white px-8 py-4 text-base rounded-xl font-semibold"
+          class="w-full mt-12 bg-[#FE5428] hover:bg-[#e64520] text-white px-8 py-3 rounded-xl text-base"
         >
-          {$inFlightLoading ? 'Loading...' : 'Next Team'}
+          {$inFlightLoading ? 'Loading...' : 'Get Next Team'}
         </Button>
       </div>
-    {:else if isComparing && $currentTeamRune}
-      <!-- Comparison view: show current team and two choice buttons -->
-      <div class="w-full space-y-6">
-        <h2 class="text-2xl font-bold text-white text-center">
-          Go to Table {$currentTeamRune.table || 'N/A'}
-        </h2>
-
-        <div
-          class={getTeamCardClass($selectedWinnerRune === $currentTeamRune.id)}
-        >
-          <div class="flex items-start justify-between gap-4">
+    {:else if isFirstTeam && $currentTeamRune}
+      <!-- First team: show details and next button -->
+      <div class="w-full flex justify-center">
+        <div class="w-full max-w-[40%] space-y-6">
+          <h2 class="text-2xl font-bold text-white text-center">
+            Go to Table {$currentTeamRune.table || 'N/A'}
+          </h2>
+          <div class={getTeamCardClass(false)}>
             <div>
               <h3 class="text-white text-2xl font-semibold">
                 {$currentTeamRune.name}
@@ -252,79 +234,154 @@
                 </p>
               {/if}
             </div>
-            <span
-              class="text-xs font-medium uppercase tracking-wider text-zinc-500 whitespace-nowrap"
+            <div class="space-y-5 text-base">
+              {#if $currentTeamRune.submission?.name}
+                <div>
+                  <p class="text-gray-400 font-medium">Submission</p>
+                  <p class="text-white mt-2">
+                    {$currentTeamRune.submission.name}
+                  </p>
+                </div>
+              {/if}
+              {#if $currentTeamRune.submission?.desc}
+                <div>
+                  <p class="text-gray-400 font-medium">Description</p>
+                  <p class="text-white mt-2 leading-relaxed">
+                    {$currentTeamRune.submission.desc}
+                  </p>
+                </div>
+              {/if}
+              {#if $currentTeamRune.submission?.repo}
+                <div>
+                  <p class="text-gray-400 font-medium">Repository</p>
+                  <a
+                    href={$currentTeamRune.submission.repo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-white hover:underline break-all inline-flex items-center gap-2 mt-2 text-sm"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      ><path
+                        d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                      /></svg
+                    >
+                    Open on GitHub
+                  </a>
+                </div>
+              {/if}
+            </div>
+          </div>
+          <Button
+            on:click={handleStartJudging}
+            disabled={$inFlightLoading}
+            class="w-full bg-[#FE5428] hover:bg-[#e64520] text-white px-8 py-4 text-base rounded-xl font-semibold"
+          >
+            {$inFlightLoading ? 'Loading...' : 'Next Team'}
+          </Button>
+        </div>
+      </div>
+    {:else if isComparing && $currentTeamRune}
+      <!-- Comparison view: show current team and two choice buttons -->
+      <div class="w-full flex justify-center">
+        <div class="w-full max-w-[40%] space-y-6">
+          <h2 class="text-2xl font-bold text-white text-center">
+            Go to Table {$currentTeamRune.table || 'N/A'}
+          </h2>
+
+          <div
+            class={getTeamCardClass(
+              $selectedWinnerRune === $currentTeamRune.id
+            )}
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h3 class="text-white text-2xl font-semibold">
+                  {$currentTeamRune.name}
+                </h3>
+                {#if $currentTeamRune.table}
+                  <p class="text-gray-500 mt-2 text-sm">
+                    Table {$currentTeamRune.table}
+                  </p>
+                {/if}
+              </div>
+              <span
+                class="text-xs font-medium uppercase tracking-wider text-zinc-500 whitespace-nowrap"
+              >
+                Current Team
+              </span>
+            </div>
+            <div class="space-y-5 text-base">
+              {#if $currentTeamRune.submission?.name}
+                <div>
+                  <p class="text-gray-400 font-medium">Submission</p>
+                  <p class="text-white mt-2">
+                    {$currentTeamRune.submission.name}
+                  </p>
+                </div>
+              {/if}
+              {#if $currentTeamRune.submission?.desc}
+                <div>
+                  <p class="text-gray-400 font-medium">Description</p>
+                  <p class="text-white mt-2 leading-relaxed">
+                    {$currentTeamRune.submission.desc}
+                  </p>
+                </div>
+              {/if}
+              {#if $currentTeamRune.submission?.repo}
+                <div>
+                  <p class="text-gray-400 font-medium">Repository</p>
+                  <a
+                    href={$currentTeamRune.submission.repo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-white hover:underline break-all inline-flex items-center gap-2 mt-2"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      ><path
+                        d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
+                      /></svg
+                    >
+                    Open on GitHub
+                  </a>
+                </div>
+              {/if}
+            </div>
+          </div>
+
+          {#if $errorMessage}
+            <div
+              class="p-4 rounded-lg border border-red-500 bg-red-500/10 text-red-300"
+            >
+              {$errorMessage}
+            </div>
+          {/if}
+
+          <div class="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              on:click={() => handleSelectWinnerClick('previous')}
+              class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-white bg-white p-3 text-center transition duration-200 hover:bg-white/95 active:opacity-80 text-black font-semibold text-sm"
+              aria-label="Select previous team as winner"
+            >
+              Previous Team
+            </button>
+            <button
+              type="button"
+              on:click={() => handleSelectWinnerClick($currentTeamRune.id)}
+              class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-[#FE5428] bg-[#FE5428] p-3 text-center transition duration-200 hover:bg-[#e64520] hover:border-[#e64520] active:opacity-80 text-white shadow-[0_18px_45px_-20px_rgba(254,84,40,0.85)] font-semibold text-sm"
+              aria-label="Select current team as winner"
             >
               Current Team
-            </span>
+            </button>
           </div>
-          <div class="space-y-5 text-base">
-            {#if $currentTeamRune.submission?.name}
-              <div>
-                <p class="text-gray-400 font-medium">Submission</p>
-                <p class="text-white mt-2">
-                  {$currentTeamRune.submission.name}
-                </p>
-              </div>
-            {/if}
-            {#if $currentTeamRune.submission?.desc}
-              <div>
-                <p class="text-gray-400 font-medium">Description</p>
-                <p class="text-white mt-2 leading-relaxed">
-                  {$currentTeamRune.submission.desc}
-                </p>
-              </div>
-            {/if}
-            {#if $currentTeamRune.submission?.repo}
-              <div>
-                <p class="text-gray-400 font-medium">Repository</p>
-                <a
-                  href={$currentTeamRune.submission.repo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-white hover:underline break-all inline-flex items-center gap-2 mt-2"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                    ><path
-                      d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"
-                    /></svg
-                  >
-                  Open on GitHub
-                </a>
-              </div>
-            {/if}
-          </div>
-        </div>
-
-        {#if $errorMessage}
-          <div
-            class="p-4 rounded-lg border border-red-500 bg-red-500/10 text-red-300"
-          >
-            {$errorMessage}
-          </div>
-        {/if}
-
-        <div class="grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            on:click={() => handleSelectWinnerClick('previous')}
-            class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-white bg-white p-3 text-center transition duration-200 hover:bg-white/95 active:opacity-80 text-black font-semibold text-sm"
-            aria-label="Select previous team as winner"
-          >
-            Previous Team
-          </button>
-          <button
-            type="button"
-            on:click={() => handleSelectWinnerClick($currentTeamRune.id)}
-            class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-[#FE5428] bg-[#FE5428] p-3 text-center transition duration-200 hover:bg-[#e64520] hover:border-[#e64520] active:opacity-80 text-white shadow-[0_18px_45px_-20px_rgba(254,84,40,0.85)] font-semibold text-sm"
-            aria-label="Select current team as winner"
-          >
-            Current Team
-          </button>
         </div>
       </div>
     {/if}

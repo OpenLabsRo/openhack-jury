@@ -4,7 +4,7 @@
         "description": "Backend API for OpenHack handling participant accounts, teams, feature flags, and superuser check-in tooling.",
         "title": "OpenHack Backend API",
         "contact": {},
-        "version": "25.11.05.0"
+        "version": "25.11.07.0"
     },
     "basePath": "/",
     "paths": {
@@ -285,6 +285,46 @@
                 }
             }
         },
+        "/accounts/promotionals": {
+            "get": {
+                "security": [
+                    {
+                        "AccountAuth": []
+                    }
+                ],
+                "description": "Returns a key-value map of promotional codes assigned to the participant.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Accounts Profile"
+                ],
+                "summary": "Get promotional codes",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/accounts/voting/finalists": {
             "get": {
                 "security": [
@@ -417,6 +457,79 @@
                         "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/errmsg._AccountAlreadyRegistered"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/vouchers/{voucherType}/{index}": {
+            "get": {
+                "description": "Returns a voucher image for the authenticated participant if they have the corresponding promotional code.",
+                "produces": [
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "Accounts Vouchers"
+                ],
+                "summary": "Get voucher image",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authentication token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Voucher type (e.g., vmax)",
+                        "name": "voucherType",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Voucher index",
+                        "name": "index",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._VoucherInvalidIndex"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._VoucherNoPromoCode"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._VoucherNotFound"
                         }
                     },
                     "500": {
@@ -649,6 +762,49 @@
                         "description": "Gone",
                         "schema": {
                             "$ref": "#/definitions/errmsg._JudgingFinished"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._InternalServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/judge/previous-team": {
+            "get": {
+                "security": [
+                    {
+                        "JudgeAuth": []
+                    }
+                ],
+                "description": "Returns the previous team ID for the judge to evaluate. Moves backward in the judge's rotation.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Judges"
+                ],
+                "summary": "Get previous team for judging",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Team"
+                        }
+                    },
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._JudgeResting"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errmsg._AccountNoToken"
                         }
                     },
                     "500": {
@@ -3191,6 +3347,45 @@
                 }
             }
         },
+        "errmsg._VoucherInvalidIndex": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "invalid voucher index"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 400
+                }
+            }
+        },
+        "errmsg._VoucherNoPromoCode": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "no promotional code for this voucher type"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 403
+                }
+            }
+        },
+        "errmsg._VoucherNotFound": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "voucher not found"
+                },
+                "statusCode": {
+                    "type": "integer",
+                    "example": 404
+                }
+            }
+        },
         "flags.FlagAssignments": {
             "type": "object",
             "additionalProperties": {
@@ -3392,6 +3587,12 @@
                 "present": {
                     "type": "boolean"
                 },
+                "promotionals": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "teamID": {
                     "type": "string"
                 },
@@ -3410,6 +3611,10 @@
                 "jerky": {
                     "type": "boolean",
                     "example": false
+                },
+                "monster": {
+                    "type": "integer",
+                    "example": 0
                 },
                 "pizza": {
                     "type": "boolean",

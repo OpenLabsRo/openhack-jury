@@ -39,11 +39,11 @@
 
   $: judgingEnabled = Boolean($flagsRune?.flags?.judging)
   $: isAwaitingStart = $judgeDataRune?.currentTeam === -1
-  $: isFirstTeam = $judgeDataRune?.currentTeam === 0
-  $: isComparing =
-    ($judgeDataRune?.currentTeam ?? -1) > 0 && $currentTeamRune !== null
+  $: isFirstTeam = $currentTeamRune?.id && !$previousTeamRune?.id
+  $: isComparing = $currentTeamRune?.id && $previousTeamRune?.id
+  $: isResting = !$currentTeamRune?.id
 
-  $: timerVisible = $judgeDataRune?.currentTeam !== -1
+  $: timerVisible = $judgeDataRune?.currentTeam !== -1 && judgingEnabled
 
   function getCardClass(isSelected: boolean = false): string {
     const base =
@@ -72,6 +72,8 @@
   async function handleConfirmSelection() {
     if (!pendingWinnerSelection || !$currentTeamRune) return
 
+    isConfirmingSelection = true
+
     // Determine if winner is 'current' or 'previous'
     const winnerType =
       pendingWinnerSelection === $currentTeamRune.id ? 'current' : 'previous'
@@ -89,6 +91,8 @@
         isJudgingFinishedRune.set(true)
         clearError()
       }
+    } finally {
+      isConfirmingSelection = false
     }
   }
 
@@ -98,14 +102,58 @@
   }
 
   $: confirmDialogTitle =
-    pendingWinnerSelection === 'previous'
-      ? 'Select Previous Team?'
-      : 'Select Current Team?'
+    pendingWinnerSelection === 'previous' && $previousTeamRune
+      ? `Select "${$previousTeamRune.name}"?`
+      : pendingWinnerSelection === 'previous'
+        ? 'Select Previous Team?'
+        : $currentTeamRune
+          ? `Select "${$currentTeamRune.name}"?`
+          : 'Select Current Team?'
 
   $: confirmDialogDescription =
-    pendingWinnerSelection === 'previous'
-      ? 'You are choosing the previous team as the winner.'
-      : `You are choosing ${$currentTeamRune?.name || 'Current Team'} as the winner.`
+    pendingWinnerSelection === 'previous' && $previousTeamRune
+      ? `Do you wish to select "${$previousTeamRune.name}" as the winner?`
+      : pendingWinnerSelection === 'previous'
+        ? `Do you wish to select the previous team as the winner?`
+        : $currentTeamRune
+          ? `Do you wish to select "${$currentTeamRune.name}" as the winner?`
+          : `Do you wish to select the current team as the winner?`
+
+  // Comprehensive debug logging as reactive statement
+  $: {
+    console.log('===== JUDGE STATE DEBUG (Mobile) =====')
+    console.log('RUNES:')
+    console.log('  judgeDataRune:', {
+      id: $judgeDataRune?.id || null,
+      name: $judgeDataRune?.name || null,
+      currentTeam: $judgeDataRune?.currentTeam,
+      pair: $judgeDataRune?.pair || null,
+      nextTeamTime: $judgeDataRune?.nextTeamTime || null,
+    })
+    console.log('  currentTeamRune:', {
+      id: $currentTeamRune?.id || null,
+      name: $currentTeamRune?.name || null,
+      table: $currentTeamRune?.table || null,
+    })
+    console.log('  previousTeamRune:', {
+      id: $previousTeamRune?.id || null,
+      name: $previousTeamRune?.name || null,
+      table: $previousTeamRune?.table || null,
+    })
+    console.log('  selectedWinnerRune:', $selectedWinnerRune)
+    console.log('  isJudgingFinishedRune:', $isJudgingFinishedRune)
+    console.log('  flagsRune:', $flagsRune)
+    console.log('  inFlightLoading:', $inFlightLoading)
+    console.log('')
+    console.log('COMPUTED VARIABLES:')
+    console.log('  judgingEnabled:', judgingEnabled)
+    console.log('  isAwaitingStart:', isAwaitingStart)
+    console.log('  isFirstTeam:', isFirstTeam)
+    console.log('  isComparing:', isComparing)
+    console.log('  isResting:', isResting)
+    console.log('  timerVisible:', timerVisible)
+    console.log('=====================================')
+  }
 </script>
 
 <LoadingOverlay isVisible={$inFlightLoading} />
@@ -113,12 +161,12 @@
 <div class="min-h-screen bg-black flex flex-col">
   <TopBar />
 
-  <main
+  <div
     class="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center"
-    style="padding-top: 10vh;"
+    style="padding-top: 12vh;"
   >
     {#if judgingEnabled && !isAwaitingStart && !$isJudgingFinishedRune}
-      <div class="mb-6">
+      <div class="mb-6 flex justify-center">
         <CountdownTimer
           nextTeamTime={$judgeDataRune?.nextTeamTime}
           isVisible={timerVisible}
@@ -136,8 +184,8 @@
       </div>
     {:else if $isJudgingFinishedRune}
       <!-- Completion state: judging is finished -->
-      <div class="max-w-lg mx-auto text-center space-y-4 mt-24">
-        <h1 class="text-3xl font-bold text-white">Judging Complete!</h1>
+      <div class="max-w-md mx-auto text-center space-y-4 mt-12">
+        <h1 class="text-2xl font-bold text-white">Judging Complete!</h1>
         <p class="text-gray-400">
           Thank you for judging all the teams. The rankings are being computed.
         </p>
@@ -157,7 +205,7 @@
           {$inFlightLoading ? 'Loading...' : 'Start Judging'}
         </Button>
       </div>
-    {:else if !isAwaitingStart && !$currentTeamRune}
+    {:else if isResting}
       <!-- Resting state: judge has no current team assigned -->
       <div class="max-w-md mx-auto text-center space-y-4 mt-12">
         <h1 class="text-2xl font-bold text-white">Resting</h1>
@@ -165,6 +213,13 @@
           You're currently between matches. Please wait — the system will assign
           the next team when ready.
         </p>
+        <Button
+          on:click={handleStartJudging}
+          disabled={$inFlightLoading}
+          class="w-full mt-8 bg-[#FE5428] hover:bg-[#e64520] text-white py-3 text-base rounded-xl"
+        >
+          {$inFlightLoading ? 'Loading...' : 'Get Next Team'}
+        </Button>
       </div>
     {:else if isFirstTeam && $currentTeamRune}
       <!-- First team: show details and next button -->
@@ -174,11 +229,11 @@
         </h2>
         <div class={getCardClass(false)}>
           <div>
-            <h3 class="text-white font-semibold text-lg">
+            <h3 class="text-white text-xl font-semibold">
               {$currentTeamRune.name}
             </h3>
             {#if $currentTeamRune.table}
-              <p class="text-xs text-gray-500 mt-1">
+              <p class="text-gray-500 mt-2 text-sm">
                 Table {$currentTeamRune.table}
               </p>
             {/if}
@@ -195,7 +250,7 @@
             {#if $currentTeamRune.submission?.desc}
               <div>
                 <p class="text-gray-400 font-medium">Description</p>
-                <p class="text-white text-xs mt-1">
+                <p class="text-white mt-1 leading-relaxed">
                   {$currentTeamRune.submission.desc}
                 </p>
               </div>
@@ -207,7 +262,7 @@
                   href={$currentTeamRune.submission.repo}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-white text-xs hover:underline break-all inline-flex items-center gap-2 mt-1"
+                  class="text-white hover:underline break-all inline-flex items-center gap-2 mt-1 text-xs"
                 >
                   <svg
                     class="w-4 h-4"
@@ -227,28 +282,35 @@
         <Button
           on:click={handleStartJudging}
           disabled={$inFlightLoading}
-          class="w-full bg-[#FE5428] hover:bg-[#e64520] text-white py-4 text-base rounded-xl font-semibold"
+          class="w-full bg-[#FE5428] hover:bg-[#e64520] text-white py-3 text-base rounded-xl font-semibold"
         >
           {$inFlightLoading ? 'Loading...' : 'Next Team'}
         </Button>
       </div>
     {:else if isComparing && $currentTeamRune}
-      <!-- Comparison view: show current team with two choice buttons -->
+      <!-- Comparison view: show current team and two choice buttons -->
       <div class="w-full space-y-5">
         <h2 class="text-xl font-bold text-white text-center">
           Go to Table {$currentTeamRune.table || 'N/A'}
         </h2>
 
-        <div class={getCardClass(false)}>
-          <div>
-            <h3 class="text-white text-lg font-semibold">
-              {$currentTeamRune.name}
-            </h3>
-            {#if $currentTeamRune.table}
-              <p class="text-gray-500 mt-1 text-sm">
-                Table {$currentTeamRune.table}
-              </p>
-            {/if}
+        <div class={getCardClass($selectedWinnerRune === $currentTeamRune.id)}>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-white text-xl font-semibold">
+                {$currentTeamRune.name}
+              </h3>
+              {#if $currentTeamRune.table}
+                <p class="text-gray-500 mt-2 text-sm">
+                  Table {$currentTeamRune.table}
+                </p>
+              {/if}
+            </div>
+            <span
+              class="text-xs font-medium uppercase tracking-wider text-zinc-500 whitespace-nowrap"
+            >
+              Current Team
+            </span>
           </div>
           <div class="space-y-4 text-sm">
             {#if $currentTeamRune.submission?.name}
@@ -262,7 +324,7 @@
             {#if $currentTeamRune.submission?.desc}
               <div>
                 <p class="text-gray-400 font-medium">Description</p>
-                <p class="text-white text-sm mt-1">
+                <p class="text-white mt-1 leading-relaxed">
                   {$currentTeamRune.submission.desc}
                 </p>
               </div>
@@ -274,7 +336,7 @@
                   href={$currentTeamRune.submission.repo}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-white text-xs hover:underline break-all inline-flex items-center gap-2 mt-1"
+                  class="text-white hover:underline break-all inline-flex items-center gap-2 mt-1 text-xs"
                 >
                   <svg
                     class="w-4 h-4"
@@ -294,7 +356,7 @@
 
         {#if $errorMessage}
           <div
-            class="p-4 rounded-lg border border-red-500 bg-red-500/10 text-red-300"
+            class="p-3 rounded-lg border border-red-500 bg-red-500/10 text-red-300 text-sm"
           >
             {$errorMessage}
           </div>
@@ -304,23 +366,25 @@
           <button
             type="button"
             on:click={() => handleSelectWinnerClick('previous')}
-            class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-white bg-white p-3 text-center transition duration-200 hover:bg-white/95 active:opacity-80"
+            disabled={isConfirmingSelection}
+            class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-white bg-white p-3 text-center transition duration-200 hover:bg-white/95 active:opacity-80 disabled:opacity-50 text-black font-semibold text-sm"
             aria-label="Select previous team as winner"
           >
-            <span class="font-semibold text-black text-sm">Previous Team</span>
+            Previous Team
           </button>
           <button
             type="button"
             on:click={() => handleSelectWinnerClick($currentTeamRune.id)}
-            class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-[#FE5428] bg-[#FE5428] p-3 text-center transition duration-200 hover:bg-[#e64520] hover:border-[#e64520] active:opacity-80 shadow-[0_18px_45px_-20px_rgba(254,84,40,0.85)]"
+            disabled={isConfirmingSelection}
+            class="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-[#FE5428] bg-[#FE5428] p-3 text-center transition duration-200 hover:bg-[#e64520] hover:border-[#e64520] active:opacity-80 disabled:opacity-50 text-white shadow-[0_18px_45px_-20px_rgba(254,84,40,0.85)] font-semibold text-sm"
             aria-label="Select current team as winner"
           >
-            <span class="font-semibold text-white text-sm">Current Team</span>
+            Current Team
           </button>
         </div>
       </div>
     {/if}
-  </main>
+  </div>
 </div>
 
 <ConfirmDialog

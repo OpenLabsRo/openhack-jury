@@ -1,7 +1,7 @@
 {
   "name": "OpenHack",
   "short_name": "OpenHack",
-  "description": "OpenHack Participants Application",
+  "description": "OpenHack Jury Application",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
